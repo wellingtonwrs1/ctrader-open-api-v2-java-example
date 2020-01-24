@@ -5,6 +5,9 @@ import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.protobuf.MessageLite;
 import com.spotware.connect.netty.handler.ChannelMessageToProtoMessageEncoder;
 import com.spotware.connect.netty.handler.ClientSslEngineFactory;
@@ -36,6 +39,7 @@ import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
 public class NettyClient {
+	private static final Logger LOGGER = LoggerFactory.getLogger(NettyClient.class);
     private static final long INACTIVITY_READ_MILLIS = 60000;
     private static final long PING_INTERVAL_MILLIS = 30000;
     private static final int MAX_FRAME_LENGTH = 1024 * 1024 * 10;
@@ -69,27 +73,33 @@ public class NettyClient {
         return authHelper;
     }
 
-    public void connect() {
-        workerGroup = new NioEventLoopGroup();
+	public void connect() {
+		workerGroup = new NioEventLoopGroup();
 
-        try {
-            Bootstrap b = new Bootstrap();
-            b.group(workerGroup);
-            b.channel(NioSocketChannel.class);
-            b.option(ChannelOption.SO_KEEPALIVE, true);
-            b.handler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                public void initChannel(SocketChannel ch) throws Exception {
-                    initPipelineForChannel(ch);
-                }
-            });
-            // Start the client.
-            channelFuture = b.connect(host, port).sync();
+		try {
+			Bootstrap b = new Bootstrap();
+			b.group(workerGroup);
+			b.channel(NioSocketChannel.class);
+			b.option(ChannelOption.SO_KEEPALIVE, true);
+			b.handler(new ChannelInitializer<SocketChannel>() {
+				@Override
+				public void initChannel(SocketChannel ch) throws Exception {
+					initPipelineForChannel(ch);
+				}
+			});
+			// Start the client.
+			channelFuture = b.connect(host, port).sync();
 
-        } catch (Exception ex) {
-            closeConnection();
-        }
-    }
+			channelFuture.addListener((future) -> {
+				if (future.isSuccess()) {
+					LOGGER.info("Client connected!");
+				}
+			});
+		} catch (Exception ex) {
+			LOGGER.error("Exception on client connect!", ex);
+			closeConnection();
+		}
+	}
 
     private void initPipelineForChannel(Channel ch) throws SSLException {
         ChannelPipeline pipeline = ch.pipeline();

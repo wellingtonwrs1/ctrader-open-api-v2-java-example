@@ -33,7 +33,7 @@ public class ProtoOASymbolsListReqExample {
                 .build();
         ProtoMessageReceiver receiver = nettyClient.writeAndFlush(protoOASymbolsListReq);
 
-        MessageLite messageLite = receiver.waitSingleResult(200L);
+        MessageLite messageLite = receiver.waitSingleResult();
 
         if (messageLite instanceof ProtoOASymbolsListRes) {
             ProtoOASymbolsListRes response = (ProtoOASymbolsListRes) messageLite;
