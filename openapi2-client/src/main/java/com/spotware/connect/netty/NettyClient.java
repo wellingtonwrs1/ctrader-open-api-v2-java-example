@@ -39,6 +39,7 @@ import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
 public class NettyClient {
+	
 	private static final Logger LOGGER = LoggerFactory.getLogger(NettyClient.class);
     private static final long INACTIVITY_READ_MILLIS = 60000;
     private static final long PING_INTERVAL_MILLIS = 30000;
@@ -52,28 +53,18 @@ public class NettyClient {
     private final ProtoMessageReceiverHandler protoMessageReceiverHandler;
     private final ProtoMessageFactory msgFactory;
 
-    private AuthHelper authHelper;
     private ChannelFuture channelFuture;
     private EventLoopGroup workerGroup;
-    private String host;
-    private int port;
 
     public NettyClient(String host, int port) {
-        this.host = host;
-        this.port = port;
         this.msgFactory = new OA2ProtoMessageFactory();
         this.protoChannelMessageDecoder = new ProtoMessageToChannelMessageDecoder(msgFactory);
         this.protoChannelMessageEncoder = new ChannelMessageToProtoMessageEncoder(msgFactory);
         this.protoMessageReceiverHandler = new ProtoMessageReceiverHandler();
-        authHelper = new AuthHelper(this);
-        connect();
+        this.connect(host, port);
     }
 
-    public AuthHelper getAuthHelper() {
-        return authHelper;
-    }
-
-	public void connect() {
+	public void connect(String host, int port) {
 		workerGroup = new NioEventLoopGroup();
 
 		try {
@@ -92,11 +83,11 @@ public class NettyClient {
 
 			channelFuture.addListener((future) -> {
 				if (future.isSuccess()) {
-					LOGGER.info("Client connected!");
+					LOGGER.info("Spotware netty client connected!");
 				}
 			});
 		} catch (Exception ex) {
-			LOGGER.error("Exception on client connect!", ex);
+			LOGGER.error("Exception on Spotware netty client connect!", ex);
 			closeConnection();
 		}
 	}
@@ -105,12 +96,8 @@ public class NettyClient {
         ChannelPipeline pipeline = ch.pipeline();
         SslEngineFactory sslEngineFactory = new ClientSslEngineFactory();
         pipeline.addLast("ssl", sslEngineFactory.newHandler(ch));
-
-        pipeline.addLast("idleState", new IdleStateHandler(INACTIVITY_READ_MILLIS,
-                PING_INTERVAL_MILLIS, 0, TimeUnit.MILLISECONDS));
-
-        pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, LENGTH_FIELD_LENGTH, 0,
-                LENGTH_FIELD_LENGTH));
+        pipeline.addLast("idleState", new IdleStateHandler(INACTIVITY_READ_MILLIS, PING_INTERVAL_MILLIS, 0, TimeUnit.MILLISECONDS));
+        pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, LENGTH_FIELD_LENGTH, 0, LENGTH_FIELD_LENGTH));
         pipeline.addLast("protobufDecoder", protobufDecoder);
         pipeline.addLast("protoChannelMessageDecoder", protoChannelMessageDecoder);
         pipeline.addLast("lengthFieldPrepender", lengthFieldPrepender);
