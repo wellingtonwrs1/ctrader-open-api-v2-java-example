@@ -16,7 +16,6 @@ import com.spotware.connect.netty.handler.HeartbeatOnIdleHandler;
 import com.spotware.connect.netty.handler.ProtoMessageReceiver;
 import com.spotware.connect.netty.handler.ProtoMessageReceiverHandler;
 import com.spotware.connect.netty.handler.ProtoMessageToChannelMessageDecoder;
-import com.spotware.connect.netty.handler.SslEngineFactory;
 import com.spotware.connect.protocol.OA2ProtoMessageFactory;
 import com.spotware.connect.protocol.ProtoMessageFactory;
 import com.xtrader.protocol.proto.commons.ProtoMessage;
@@ -55,25 +54,21 @@ public class NettyClient {
     private AuthHelper authHelper;
     private ChannelFuture channelFuture;
     private EventLoopGroup workerGroup;
-    private String host;
-    private int port;
 
     public NettyClient(String host, int port) {
-        this.host = host;
-        this.port = port;
         this.msgFactory = new OA2ProtoMessageFactory();
         this.protoChannelMessageDecoder = new ProtoMessageToChannelMessageDecoder(msgFactory);
         this.protoChannelMessageEncoder = new ChannelMessageToProtoMessageEncoder(msgFactory);
         this.protoMessageReceiverHandler = new ProtoMessageReceiverHandler();
         authHelper = new AuthHelper(this);
-        connect();
+        connect(host, port);
     }
 
     public AuthHelper getAuthHelper() {
         return authHelper;
     }
 
-	public void connect() {
+	public void connect(String host, int port) {
 		workerGroup = new NioEventLoopGroup();
 
 		try {
@@ -103,14 +98,9 @@ public class NettyClient {
 
     private void initPipelineForChannel(Channel ch) throws SSLException {
         ChannelPipeline pipeline = ch.pipeline();
-        SslEngineFactory sslEngineFactory = new ClientSslEngineFactory();
-        pipeline.addLast("ssl", sslEngineFactory.newHandler(ch));
-
-        pipeline.addLast("idleState", new IdleStateHandler(INACTIVITY_READ_MILLIS,
-                PING_INTERVAL_MILLIS, 0, TimeUnit.MILLISECONDS));
-
-        pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, LENGTH_FIELD_LENGTH, 0,
-                LENGTH_FIELD_LENGTH));
+        pipeline.addLast("ssl", new ClientSslEngineFactory().newHandler(ch));
+        pipeline.addLast("idleState", new IdleStateHandler(INACTIVITY_READ_MILLIS, PING_INTERVAL_MILLIS, 0, TimeUnit.MILLISECONDS));
+        pipeline.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(MAX_FRAME_LENGTH, 0, LENGTH_FIELD_LENGTH, 0, LENGTH_FIELD_LENGTH));
         pipeline.addLast("protobufDecoder", protobufDecoder);
         pipeline.addLast("protoChannelMessageDecoder", protoChannelMessageDecoder);
         pipeline.addLast("lengthFieldPrepender", lengthFieldPrepender);

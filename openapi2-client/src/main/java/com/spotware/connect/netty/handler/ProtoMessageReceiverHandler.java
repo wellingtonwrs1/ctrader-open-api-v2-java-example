@@ -18,7 +18,9 @@ import com.spotware.connect.protocol.ChannelMessage;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelHandler.Sharable;
 
+@Sharable
 public class ProtoMessageReceiverHandler extends ChannelInboundHandlerAdapter {
     public static final String NAME = "MESSAGE_RECEIVER";
     private static final long EXPIRATION_REQUEST_TIMEOUT = 5 * 60 * 1000L;// 5 min

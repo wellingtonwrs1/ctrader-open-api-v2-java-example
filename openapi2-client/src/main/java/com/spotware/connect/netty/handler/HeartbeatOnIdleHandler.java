@@ -9,9 +9,11 @@ import com.xtrader.protocol.proto.commons.ProtoHeartbeatEvent;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 
+@Sharable
 public class HeartbeatOnIdleHandler extends ChannelDuplexHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatOnIdleHandler.class);
     private static final ChannelMessage<ProtoHeartbeatEvent> HEARTBEAT_MSG = new ChannelMessage<>(ProtoHeartbeatEvent.getDefaultInstance());
